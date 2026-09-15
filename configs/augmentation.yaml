@@ -1,0 +1,89 @@
+# Behavior-aware sequence augmentation.
+#   python scripts/run_augment.py
+#   python scripts/run_augment.py dataset=qk_article aug_variant=uniform
+defaults:
+  - base/base_config
+  - dataset: qb_video
+  - _self_
+  - aug_variant: learned
+
+seed: 2025
+target_count: ${ds.target_count}
+
+data:
+  train_dir: data/${ds.name}/train
+  preprocessed_dir: ${data.train_dir}/preprocessed
+  fixed_aug_file: augmented_data.pth
+
+sequence:
+  min_length: 2
+  max_length: 50
+
+multi_behavior:
+  num_behaviors: 7
+  behavior_replace_probs:
+    "0": 0.25
+    "1": 0.03
+    "2": 0.10
+    "3": 0.15
+    "4": 0.10
+    "5": 0.05
+    "6": 0.20
+
+augmentation:
+  device: "cuda:0"
+  performance_tuning:
+    max_memory_mb: 20000
+  generation:
+    max_length: 50
+    min_length: 2
+    max_num: 50000
+    variants_per_strategy: 1
+    dedup: true
+    duplicate_window: 1000
+    max_duplicates: 5
+    global_max_duplicates: 8
+    core_overlap_thresh: 0.85
+    min_edit_distance: 2
+    pattern_replace_prob: 0.5
+    keep_original: false
+    num_samples_per_seq: 4
+    max_variants: 4
+    strategies:
+      plm:
+        enabled: true
+        replace_prob: 0.15
+        similarity_thresh: 0.65
+        topk: 20
+      coseq:
+        enabled: true
+        replace_prob: 0.15
+        cooccur_weight: 0.5
+        sequential_weight: 0.5
+        min_threshold: 0.65
+        max_candidates: 20
+    quality_control:
+      enabled: true
+      keep_ratio: 0.3
+      max_per_user: 1
+      max_ratio_to_original: 0.5
+      quality_threshold: 0.3
+      noise_threshold: 0.2
+      relation_weight: 0.4
+      strength_weight: 0.3
+      coherence_weight: 0.3
+      core_size_ratio: 0.33
+      min_keep_ratio: 0.5
+      enable_noise_filtering: true
+      noise_filtering:
+        conservative_threshold: 0.1
+        min_frequency: 3
+        min_keep_ratio: 0.7
+        protect_core_ratio: 0.33
+        category_diversity: 3
+
+hydra:
+  run:
+    dir: experiments/${ds.name}/augmentation_${variant}
+  job:
+    chdir: false

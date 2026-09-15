@@ -1,0 +1,14 @@
+# @package _global_
+variant: full
+multi_behavior:
+  enabled: true
+  use_behavior_head: true
+data:
+  augmented_path: data/${ds.name}/train/augment_learned/augmented_data.pth
+  graph_save_dir: data/${ds.name}/train/graph_learned
+paths:
+  save_dir: models/regeneration/${ds.regen_backbone_upper}/${ds.name}/checkpoints
+  save_data: data/${ds.name}/train/regeneration/${ds.regen_backbone}
+hydra:
+  run:
+    dir: ./experiments/regeneration/${ds.name}/${ds.regen_backbone_upper}/${now:%Y-%m-%d_%H-%M-%S}

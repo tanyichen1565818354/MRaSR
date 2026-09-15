@@ -1,0 +1,38 @@
+# convert_embeddings 配置
+# 用法:
+#   python scripts/convert_embeddings.py                                    # 使用本文件默认值
+#   python scripts/convert_embeddings.py model_name=grubar dataset_name=QB-video
+#   python scripts/convert_embeddings.py paths.model_path=自定义路径         # 覆盖单个路径
+
+defaults:
+  - base/base_config
+  - _self_
+
+# ===== 核心参数（只需改这两个） =====
+model_name: sasbar        # sasbar / grubar / mbht
+dataset_name: QB-video     # QB-video / QK-video / QK-article / sbr_1m
+cuda_id: 0
+
+# baseline 训练用的数据子目录（train 或 train_0.3）
+train_subdir: "train"
+
+# ===== 路径设置（留 null 则自动推导） =====
+paths:
+  model_path: null          # null = 用下方模板自动生成
+  item_map_path: null
+  output_path: null
+
+# ===== 路径模板（一般无需修改） =====
+# {model_upper} = 模型名大写, {model_lower} = 模型名小写, {dataset} = 数据集名, {train_subdir} = 数据子目录
+path_templates:
+  # baseline 训练时 Hydra 输出目录: experiments/{MODEL}/{dataset}/{MODEL}/{dataset}/best_model.ckpt
+  model_path: "experiments/{model_upper}/{dataset}/{model_upper}/{dataset}/best_model.ckpt"
+  item_map_path: "data/{dataset}/{train_subdir}/preprocessed/item2idx.pth"
+  output_path: "data/{dataset}/{train_subdir}/embeddings/{model_lower}_item_emb.pth"
+
+# 不改变工作目录（保持相对路径可用）
+hydra:
+  run:
+    dir: .
+  job:
+    chdir: false

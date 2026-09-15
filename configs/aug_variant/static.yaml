@@ -1,0 +1,12 @@
+# @package _global_
+# Predefined-weight graph (graph/) rather than graph_learned/.
+variant: static
+data:
+  augmented_dir: data/${ds.name}/train/augment
+  graph_save_dir: data/${ds.name}/train/graph
+graph:
+  file_variant: null
+multi_behavior:
+  enabled: true
+  num_behaviors: 7
+  use_behavior_replace_probs: true

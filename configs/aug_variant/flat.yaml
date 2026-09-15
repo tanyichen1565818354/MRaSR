@@ -1,0 +1,10 @@
+# @package _global_
+# Flatten ablation: no behavior-aware replacement probabilities.
+variant: flat
+data:
+  augmented_dir: data/${ds.name}/train/augment_flat
+  graph_save_dir: data/${ds.name}/train/graph_flat
+graph:
+  file_variant: null
+multi_behavior:
+  enabled: false

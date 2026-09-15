@@ -1,0 +1,27 @@
+# @package _global_
+ds:
+  name: QB-video
+  raw_csv: data/Tenrec/Tenrec/QB-video.csv
+  target_count: 100000
+  train_batch_size: 1024
+  regen_batch_size: 64
+  regen_grad_accum: 8
+  regen_use_amp: true
+  regen_backbone: sasbar
+  regen_backbone_upper: SASBAR
+  aug:
+    num_samples_per_seq: 2
+    similarity_thresh: 0.75
+    min_threshold: 0.75
+    max_ratio_to_original: 0.3
+    quality_threshold: 0.45
+  regen_quality:
+    similarity_threshold: 0.45
+    overlap_threshold: 0.0
+  category_columns:
+    - video_category
+  behavior_columns:
+    click: 0
+    follow: 3
+    like: 1
+    share: 4

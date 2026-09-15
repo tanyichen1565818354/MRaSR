@@ -1,0 +1,27 @@
+# @package _global_
+ds:
+  name: QK-video
+  raw_csv: data/Tenrec/Tenrec/QK-video.csv
+  target_count: 1000000
+  train_batch_size: 256
+  regen_batch_size: 32
+  regen_grad_accum: 8
+  regen_use_amp: false
+  regen_backbone: sasbar
+  regen_backbone_upper: SASBAR
+  aug:
+    num_samples_per_seq: 4
+    similarity_thresh: 0.65
+    min_threshold: 0.65
+    max_ratio_to_original: 0.5
+    quality_threshold: 0.3
+  regen_quality:
+    similarity_threshold: 0.6
+    overlap_threshold: 0.4
+  category_columns:
+    - video_category
+  behavior_columns:
+    click: 0
+    follow: 3
+    like: 1
+    share: 4

@@ -1,0 +1,9 @@
+# @package _global_
+# Flatten ablation: ignore behavior labels when building the graph.
+variant: flat
+data:
+  graph_save_dir: data/${ds.name}/train/graph_flat
+graph:
+  file_variant: null
+multi_behavior:
+  enabled: false

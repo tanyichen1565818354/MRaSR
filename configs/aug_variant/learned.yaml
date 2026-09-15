@@ -1,0 +1,23 @@
+# @package _global_
+# Full MRaSR augmentation (behavior-aware replace probs + learned graph).
+variant: learned
+data:
+  augmented_dir: data/${ds.name}/train/augment_learned
+  graph_save_dir: data/${ds.name}/train/graph_learned
+graph:
+  file_variant: learned
+multi_behavior:
+  enabled: true
+  num_behaviors: 7
+  use_behavior_replace_probs: true
+augmentation:
+  generation:
+    num_samples_per_seq: ${ds.aug.num_samples_per_seq}
+    strategies:
+      plm:
+        similarity_thresh: ${ds.aug.similarity_thresh}
+      coseq:
+        min_threshold: ${ds.aug.min_threshold}
+    quality_control:
+      max_ratio_to_original: ${ds.aug.max_ratio_to_original}
+      quality_threshold: ${ds.aug.quality_threshold}

@@ -1,0 +1,38 @@
+# Tenrec preprocessing.
+#   python scripts/run_tenrec_preprocess.py
+#   python scripts/run_tenrec_preprocess.py dataset=qk_article
+defaults:
+  - dataset: qb_video
+  - _self_
+
+dataset:
+  name: ${ds.name}
+  target_behavior: 1
+  include_no_target_users_in_train: true
+  behavior_columns: ${ds.behavior_columns}
+  category_columns: ${ds.category_columns}
+
+raw:
+  data_path: ${ds.raw_csv}
+
+data_split:
+  train_dir: data/${ds.name}/train/preprocessed
+  val_dir: data/${ds.name}/val/preprocessed
+  test_dir: data/${ds.name}/test/preprocessed
+
+sequence:
+  min_length: 4
+  max_length: 50
+
+filtering:
+  kcore: 5
+
+seed: 2025
+save_sample: false
+device: "cuda:0"
+
+hydra:
+  run:
+    dir: experiments/tenrec_preprocess_${ds.name}
+  job:
+    chdir: false

@@ -1,0 +1,12 @@
+# @package _global_
+# w/o Beh-Aug: learned graph, but a single replace_prob at every position.
+variant: uniform
+data:
+  augmented_dir: data/${ds.name}/train/augment_uniform
+  graph_save_dir: data/${ds.name}/train/graph_learned
+graph:
+  file_variant: learned
+multi_behavior:
+  enabled: true
+  num_behaviors: 7
+  use_behavior_replace_probs: false

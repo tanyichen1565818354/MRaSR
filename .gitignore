@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Data, checkpoints, logs (do not upload)
+/data/*
+!/data/README.md
+experiments/
+runs/
+multiruns/
+wandb/
+*.ckpt
+*.pth
+*.pt
+*.bin
+*.npz
+*.log
+*.out

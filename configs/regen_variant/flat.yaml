@@ -1,0 +1,13 @@
+# @package _global_
+variant: flat
+multi_behavior:
+  enabled: false
+data:
+  augmented_path: data/${ds.name}/train/augment_flat/augmented_data.pth
+  graph_save_dir: data/${ds.name}/train/graph_flat
+paths:
+  save_dir: models/regeneration/${ds.regen_backbone_upper}/${ds.name}-flat/checkpoints
+  save_data: data/${ds.name}/train/regeneration/${ds.regen_backbone}-flat
+hydra:
+  run:
+    dir: ./experiments/regeneration/${ds.name}/${ds.regen_backbone_upper}-flat/${now:%Y-%m-%d_%H-%M-%S}

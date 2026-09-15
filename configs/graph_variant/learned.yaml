@@ -1,0 +1,16 @@
+# @package _global_
+# Full MRaSR: learnable behavior transition matrix R.
+variant: learned
+data:
+  graph_save_dir: data/${ds.name}/train/graph_learned
+graph:
+  file_variant: learned
+multi_behavior:
+  enabled: true
+  mode: learned_matrix
+  num_behaviors: 7
+  learn:
+    epochs: 30
+    lr: 0.05
+    cooccurrence_window: 2
+    cooccurrence_loss_weight: 0.3

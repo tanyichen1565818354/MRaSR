@@ -1,0 +1,158 @@
+# Regenerator training / decoding.
+#   python scripts/Pretrain_relation_regenerator.py
+#   python scripts/generate_regenerated_data.py dataset=qk_article regen_variant=no_dual
+defaults:
+  - base/base_config
+  - dataset: qb_video
+  - _self_
+  - regen_variant: full
+
+seed: 2025
+
+multi_behavior:
+  num_behaviors: 7
+  behavior_weights:
+    "0": 0.3
+    "1": 1.0
+    "2": 0.7
+    "3": 0.5
+    "4": 0.6
+    "5": 0.9
+    "6": 0.4
+  behavior_replace_probs:
+    "0": 0.25
+    "1": 0.03
+    "2": 0.10
+    "3": 0.15
+    "4": 0.10
+    "5": 0.05
+    "6": 0.20
+
+data_processing:
+  chunk_size: 50000
+  num_workers: 4
+  max_workers: 8
+  prefetch_factor: 2
+
+optimizer:
+  name: "adam"
+  lr: 0.001
+  betas: [0.9, 0.98]
+  eps: 1e-9
+  weight_decay: 0.0
+
+data:
+  fixed_length: 5
+  sequences_path: data/${ds.name}/train/preprocessed/sequences.pth
+  products_path: data/${ds.name}/train/preprocessed/products.pth
+  item2idx_path: data/${ds.name}/train/preprocessed/item2idx.pth
+
+model:
+  d_model: 64
+  num_layers: 2
+  nhead: 2
+  dim_feedforward: 256
+  dropout: 0.5
+  temperature_init: 0.5
+  K: 5
+  num_hidden_layers: 4
+  lambda_div: 0.01
+  relation_dim: 64
+  relation_mode: "direct_64dim"
+  fusion_strategy: "direct_fusion"
+  memory_proj_dim: 128
+  relation_bins: 1
+  fast_relation_mode: true
+  relation_cache_version: "2.0"
+  max_seq_for_full_relation: 10
+  min_condition_weight: 1e-10
+  max_condition_weight: 1.0
+  vocab_size: 100000
+  pad_token: 0
+  sos_token: null
+  eos_token: null
+  relation_feature_mode: "fused"
+
+condition_encoder:
+  relation_types: 1
+  gat_heads: 4
+  attn_dropout: 0.1
+  proj_layers: 2
+  relation_encoder:
+    plm_dim: 768
+    explicit_relation_dim: 2
+    co_occurrence_hidden: 128
+    sequential_hidden: 128
+    plm_proj_hidden: 256
+    fusion_weights: [0.4, 0.3, 0.3]
+    dropout: 0.1
+  final_projection:
+    hidden_dim: 64
+    output_dim: 64
+    dropout: 0.1
+
+training:
+  batch_size: ${ds.regen_batch_size}
+  grad_accumulation_steps: ${ds.regen_grad_accum}
+  use_amp: ${ds.regen_use_amp}
+  epochs: 100
+  max_seq_len: 50
+  warmup: 4000
+  grad_clip: 1.0
+  lr: 0.001
+  max_lr: 0.001
+  relation_source: "graph"
+  label_smoothing: 0.1
+  diversity_weight: 0.1
+  behavior_loss_weight: 0.5
+  l2_weight: 0.005
+  fusion_weights: [0.4, 0.3, 0.3]
+  mask_prob: 0.15
+  mask_range: [0.05, 0.3]
+  use_curriculum: false
+  curriculum_steps: null
+  min_tokens: 2
+  save_interval: 10
+
+generation:
+  temperature: 1.0
+  top_k: 0
+  top_p: 1.0
+  beam_size: 1
+  min_gen_len: 2
+  max_gen_len: 25
+  batch_size: 128
+  diversity_penalty: 0.0
+  reduction_factor: 1.0
+  max_variants_per_seq: 5
+  core_overlap_thresh: 0.65
+  device: "cuda:0"
+  enable_diversity: true
+  temperature_range: [0.8, 1.5]
+  top_k_sampling: true
+  random_threshold: 0.3
+  quality_filter:
+    similarity_threshold: ${ds.regen_quality.similarity_threshold}
+    overlap_threshold: ${ds.regen_quality.overlap_threshold}
+    min_length: 2
+    max_length_ratio: 2.0
+
+resources:
+  device: "cuda:0"
+  num_workers: 4
+  prefetch_factor: 2
+
+paths:
+  sasrec_emb_path: data/${ds.name}/train/embeddings/${ds.regen_backbone}_item_emb.pth
+  original_sequences: data/${ds.name}/train/preprocessed/sequences.pth
+  processed_products: data/${ds.name}/train/preprocessed/products.pth
+  processed_sequences: data/${ds.name}/train/preprocessed/sequences.pth
+  relation_cache: data/${ds.name}/train/preprocessed/relation_cache.pth
+
+performance:
+  log_relation_stats: true
+  memory_efficient: true
+
+hydra:
+  job:
+    chdir: false

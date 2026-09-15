@@ -1,0 +1,30 @@
+# @package _global_
+ds:
+  name: QK-article
+  raw_csv: data/Tenrec/Tenrec/QK-article.csv
+  target_count: 500000
+  train_batch_size: 1024
+  regen_batch_size: 128
+  regen_grad_accum: 2
+  regen_use_amp: true
+  regen_backbone: sasbar
+  regen_backbone_upper: SASBAR
+  aug:
+    num_samples_per_seq: 4
+    similarity_thresh: 0.65
+    min_threshold: 0.65
+    max_ratio_to_original: 0.3
+    quality_threshold: 0.3
+  regen_quality:
+    similarity_threshold: 0.6
+    overlap_threshold: 0.4
+  category_columns:
+    - category_first
+    - category_second
+  behavior_columns:
+    click: 0
+    read: 6
+    share: 4
+    like: 1
+    follow: 3
+    favorite: 5

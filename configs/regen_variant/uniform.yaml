@@ -1,0 +1,15 @@
+# @package _global_
+variant: uniform
+multi_behavior:
+  enabled: true
+  use_behavior_head: true
+  use_behavior_replace_probs: false
+data:
+  augmented_path: data/${ds.name}/train/augment_uniform/augmented_data.pth
+  graph_save_dir: data/${ds.name}/train/graph_learned
+paths:
+  save_dir: models/regeneration/${ds.regen_backbone_upper}/${ds.name}-uniform/checkpoints
+  save_data: data/${ds.name}/train/regeneration/${ds.regen_backbone}-uniform
+hydra:
+  run:
+    dir: ./experiments/regeneration/${ds.name}/${ds.regen_backbone_upper}-uniform/${now:%Y-%m-%d_%H-%M-%S}

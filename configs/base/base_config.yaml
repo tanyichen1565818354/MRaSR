@@ -1,0 +1,36 @@
+# base/base_config.yaml
+# 确保seed在根层级
+defaults:
+  - _self_  # 显式声明自包含配置
+
+seed: 2023
+
+experiment:
+  name: "MRaSR"
+  version: "v1.0"
+
+data:
+  meta:
+    path: "data/meta"
+  max_seq_length: 50
+
+training:
+  batch_size: 256
+  num_epochs: 1000
+  patience: 20
+  learning_rate: 0.001
+  weight_decay: 0
+  save_interval: 5
+  clip_grad_norm: 1.0
+
+logging:
+  tensorboard_dir: "runs/"
+  level: "INFO"
+
+hydra:
+  run:
+    dir: ./experiments/${hydra:job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  job:
+    name: "mrasr"
+  sweep:
+    dir: ./multiruns

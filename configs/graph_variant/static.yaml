@@ -1,0 +1,11 @@
+# @package _global_
+# Predefined scalar behavior weights (ablation vs learnable R).
+variant: static
+data:
+  graph_save_dir: data/${ds.name}/train/graph
+graph:
+  file_variant: null
+multi_behavior:
+  enabled: true
+  mode: static
+  num_behaviors: 7

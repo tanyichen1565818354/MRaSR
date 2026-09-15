@@ -1,0 +1,17 @@
+# @package _global_
+arch_key: rlbl
+model:
+  name: RLBL
+  embed_dim: 64
+  hidden_size: 128
+  layer_num: 2
+  window_size: 2
+  dropout_rate: 0.5
+  loss_fn: bce
+  num_behaviors: 7
+  target_behavior: 1
+training:
+  num_workers: 4
+  pin_memory: true
+  persistent_workers: true
+  use_amp: true

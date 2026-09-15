@@ -1,0 +1,64 @@
+# Relation-graph builder.
+#   python scripts/build_graph.py
+#   python scripts/build_graph.py dataset=qk_article graph_variant=flat
+defaults:
+  - base/base_config
+  - dataset: qb_video
+  - _self_
+  - graph_variant: learned
+
+seed: 2025
+
+data:
+  train_dir: data/${ds.name}/train
+  preprocessed_dir: ${data.train_dir}/preprocessed
+  embeddings_dir: ${data.train_dir}/preprocessed/embeddings
+  item2idx_path: ${data.train_dir}/preprocessed/item2idx.pth
+  sequences_path: ${data.train_dir}/preprocessed/sequences.pth
+  products_path: ${data.train_dir}/preprocessed/products.pth
+  plm_emb_path: ${data.train_dir}/preprocessed/embeddings/item_embeddings.pth
+  plm_id2idx_path: ${data.train_dir}/preprocessed/embeddings/item_id2idx.pth
+
+relation_building:
+  cooccurrence:
+    window_size: 2
+    default_weight: 0.6
+    sample_rate: 0.3
+  sequential:
+    default_weight: 1.0
+    decay_factor: 0.7
+
+multi_behavior:
+  behavior_weights:
+    "0": 0.3
+    "1": 1.0
+    "2": 0.7
+    "3": 0.5
+    "4": 0.6
+    "5": 0.9
+    "6": 0.4
+
+similarity_computation:
+  batch_size: 512
+  chunk_size: 1024
+  topk: 20
+  sim_threshold: 0.5
+  plm_dim: 768
+
+graph_sampling:
+  max_sequences: 80000
+
+graph:
+  bidirectional: true
+  reverse_decay: 0.5
+  relation_weights:
+    co_occurrence: 1
+    sequential: 1
+
+device: "cuda:0"
+
+hydra:
+  run:
+    dir: experiments/${ds.name}/graph_${variant}
+  job:
+    chdir: false

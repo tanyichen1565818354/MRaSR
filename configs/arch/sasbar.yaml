@@ -1,0 +1,14 @@
+# @package _global_
+arch_key: sasbar
+model:
+  name: SASBAR
+  embed_dim: 64
+  hidden_size: 128
+  head_num: 2
+  layer_num: 2
+  dropout_rate: 0.5
+  activation: gelu
+  layer_norm_eps: 1.0e-12
+  loss_fn: bce
+  num_behaviors: 7
+  target_behavior: 1

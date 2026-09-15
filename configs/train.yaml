@@ -1,0 +1,44 @@
+# Baseline training.
+#   python scripts/run_train.py
+#   python scripts/run_train.py dataset=qk_video arch=grubar
+#   python scripts/run_train.py data.use_original_only=true data.use_regen_augmented=false
+defaults:
+  - base/base_config
+  - dataset: qb_video
+  - arch: sasbar
+  - _self_
+
+seed: 2023
+
+data:
+  name: ${ds.name}
+  train_dir: data/${ds.name}/train/preprocessed
+  val_dir: data/${ds.name}/val/preprocessed
+  test_dir: data/${ds.name}/test/preprocessed
+  item_map: data/${ds.name}/train/preprocessed/item2idx.pth
+  max_seq_len: 50
+  use_original_only: false
+  use_regen_augmented: true
+  augmented_path: data/${ds.name}/train/augment_learned/augmented_data.pth
+  regen_path: data/${ds.name}/train/regeneration/${arch_key}/regenerated_data.pth
+
+training:
+  batch_size: ${ds.train_batch_size}
+  num_epochs: 1000
+  learning_rate: 0.001
+  weight_decay: 0
+  early_stop_patience: 20
+  early_stop_mode: max
+  save_dir: experiments/${model.name}/${ds.name}/
+  cuda_id: 0
+
+eval:
+  cutoff: [20, 10]
+  val_metrics: [ndcg, recall]
+  test_metrics: [ndcg, recall]
+
+hydra:
+  run:
+    dir: experiments/${model.name}/${ds.name}
+  job:
+    chdir: false
