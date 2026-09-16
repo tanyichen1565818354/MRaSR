@@ -70,7 +70,7 @@ def load_preprocessed_data(config):
     products = torch.load(products_path, weights_only=False)
     item2idx = torch.load(item2idx_path, weights_only=False)
     
-    logger.info(f"✅ 数据加载完成:")
+    logger.info(f"数据加载完成:")
     logger.info(f"   序列数: {len(sequences)}")
     logger.info(f"   商品数: {len(products)}")
     logger.info(f"   索引映射数: {len(item2idx)}")
@@ -106,7 +106,7 @@ def main(cfg: DictConfig) -> None:
         logger.info("保存图谱数据...")
         graph_builder.save_graph()
         
-        logger.info("✅ 关系图谱构建完成!")
+        logger.info("关系图谱构建完成!")
         
         # 输出最终统计
         logger.info("=== 最终统计 ===")

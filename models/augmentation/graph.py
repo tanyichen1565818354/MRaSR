@@ -160,7 +160,7 @@ class RelationGraphBuilder:
                 if asin not in self.item2idx:
                     raise ValueError(f"关键错误：{asin} 未在映射表中")
         
-        self.logger.info("✅ 数据完整性验证通过")
+        self.logger.info("数据完整性验证通过")
     
     def _load_plm_embeddings(self):
         """加载PLM嵌入（768维）"""
@@ -193,7 +193,7 @@ class RelationGraphBuilder:
             plm_emb_final = plm_emb_final.to(self.device)
             self.plm_emb = F.normalize(plm_emb_final, p=2, dim=1)
             
-            self.logger.info(f"✅ PLM嵌入加载完成，最终维度: {self.plm_emb.shape}")
+            self.logger.info(f"PLM嵌入加载完成，最终维度: {self.plm_emb.shape}")
             return self.plm_emb
             
         except Exception as e:
@@ -261,7 +261,7 @@ class RelationGraphBuilder:
                         valid_count += 1
                 
                 self.explicit_counts[rel_type] += valid_count
-                self.logger.info(f"✅ {rel_type}关系边数: {len(edges)} (有效边: {valid_count})")
+                self.logger.info(f"{rel_type}关系边数: {len(edges)} (有效边: {valid_count})")
                 
             except Exception as e:
                 self.logger.error(f"关系构建失败: {rel_type} - {str(e)}")
@@ -337,7 +337,7 @@ class RelationGraphBuilder:
         # 输出统计
         for rel_type in ['co_occurrence', 'sequential']:
             nnz = self.explicit_relation_dict[rel_type]._nnz()
-            self.logger.info(f"✅ {rel_type}关系矩阵 | 非零元素: {nnz} | 大小: {num_actual_items}x{num_actual_items}")
+            self.logger.info(f"{rel_type}关系矩阵 | 非零元素: {nnz} | 大小: {num_actual_items}x{num_actual_items}")
     
     def _build_sparse_matrix(self, edges, num_actual_items):
         """构建稀疏矩阵"""
@@ -459,7 +459,7 @@ class RelationGraphBuilder:
             ).to(self.device)
 
         nnz = self.plm_sim_matrix.nnz()
-        self.logger.info(f"✅ PLM相似度矩阵构建完成: 非零元素={nnz:,}, 平均每行={nnz/N:.1f}")
+        self.logger.info(f"PLM相似度矩阵构建完成: 非零元素={nnz:,}, 平均每行={nnz/N:.1f}")
     
     def build_full_graph(self):
         """构建完整的关系图谱"""
@@ -480,7 +480,7 @@ class RelationGraphBuilder:
             self._validate_graph()
             pbar.update(1)
         
-        self.logger.info("✅ 关系图谱构建完成")
+        self.logger.info("关系图谱构建完成")
     
     def _validate_graph(self):
         """验证图谱质量"""
@@ -505,9 +505,9 @@ class RelationGraphBuilder:
                 matrix = matrix.coalesce()
                 edge_indices = torch.cat([matrix.indices()[0], matrix.indices()[1]]).unique()
                 # 这里的索引是压缩后的索引，应该都是有效的
-                self.logger.info(f"✅ {rel_type}关系验证通过：使用压缩索引")
+                self.logger.info(f"{rel_type}关系验证通过：使用压缩索引")
         
-        self.logger.info("✅ 图谱验证完成")
+        self.logger.info("图谱验证完成")
     
     def save_graph(self, save_dir=None):
         """保存图谱数据"""
@@ -526,7 +526,7 @@ class RelationGraphBuilder:
         if self.plm_emb is not None:
             plm_path = save_dir / file_names["plm_emb"]
             torch.save(self.plm_emb.cpu(), plm_path)
-            self.logger.info(f"✅ 保存PLM嵌入: {plm_path}")
+            self.logger.info(f"保存PLM嵌入: {plm_path}")
         
         # 保存显式关系矩阵
         if self.explicit_relation_dict:
@@ -536,7 +536,7 @@ class RelationGraphBuilder:
                 for rel_type, matrix in self.explicit_relation_dict.items()
             }
             torch.save(relations_cpu, relations_path)
-            self.logger.info(f"✅ 保存显式关系矩阵: {relations_path}")
+            self.logger.info(f"保存显式关系矩阵: {relations_path}")
         
         # 保存PLM相似度矩阵
         if self.plm_sim_matrix is not None:
@@ -548,7 +548,7 @@ class RelationGraphBuilder:
                 size=self.plm_sim_matrix.sizes()
             ).coalesce().cpu()
             torch.save(sim_cpu, sim_path)
-            self.logger.info(f"✅ 保存PLM相似度矩阵: {sim_path}")
+            self.logger.info(f"保存PLM相似度矩阵: {sim_path}")
 
         # 保存可学习行为转移矩阵（learned 模式专属，供消融/可视化）
         if self.behavior_relation_matrix is not None and file_names.get("behavior_matrix"):
@@ -562,7 +562,7 @@ class RelationGraphBuilder:
                 },
                 matrix_path,
             )
-            self.logger.info(f"✅ 保存行为转移矩阵: {matrix_path}")
+            self.logger.info(f"保存行为转移矩阵: {matrix_path}")
         
         # 保存映射关系
         mapping_path = save_dir / file_names["mappings"]
@@ -573,7 +573,7 @@ class RelationGraphBuilder:
             'compressed_to_original': getattr(self, 'compressed_to_original', {})
         }
         torch.save(mappings, mapping_path)
-        self.logger.info(f"✅ 保存映射关系: {mapping_path}")
+        self.logger.info(f"保存映射关系: {mapping_path}")
         
         # 保存元数据
         metadata_path = save_dir / file_names["metadata"]
@@ -587,9 +587,9 @@ class RelationGraphBuilder:
             'config': OmegaConf.to_container(self.config)
         }
         torch.save(metadata, metadata_path)
-        self.logger.info(f"✅ 保存元数据: {metadata_path}")
+        self.logger.info(f"保存元数据: {metadata_path}")
         
-        self.logger.info("✅ 图谱保存完成")
+        self.logger.info("图谱保存完成")
     
     def load_graph(self, load_dir=None):
         """加载图谱数据"""
@@ -605,7 +605,7 @@ class RelationGraphBuilder:
         plm_path = load_dir / file_names["plm_emb"]
         if plm_path.exists():
             self.plm_emb = torch.load(plm_path, weights_only=False).to(self.device)
-            self.logger.info(f"✅ 加载PLM嵌入: {self.plm_emb.shape}")
+            self.logger.info(f"加载PLM嵌入: {self.plm_emb.shape}")
         
         # 加载显式关系矩阵
         relations_path = load_dir / file_names["explicit_relations"]
@@ -615,7 +615,7 @@ class RelationGraphBuilder:
                 rel_type: matrix.to(self.device)
                 for rel_type, matrix in relations_cpu.items()
             }
-            self.logger.info("✅ 加载显式关系矩阵")
+            self.logger.info("加载显式关系矩阵")
         
         # 加载PLM相似度矩阵
         sim_path = load_dir / file_names["plm_similarity"]
@@ -628,7 +628,7 @@ class RelationGraphBuilder:
                 value=sim_cpu.values(),
                 sparse_sizes=sim_cpu.size()
             ).to(self.device)
-            self.logger.info("✅ 加载PLM相似度矩阵")
+            self.logger.info("加载PLM相似度矩阵")
 
         # 加载行为转移矩阵（learned 模式）
         matrix_name = file_names.get("behavior_matrix")
@@ -640,7 +640,7 @@ class RelationGraphBuilder:
                     self.behavior_relation_matrix = matrix_data.get("relation_logits")
                 else:
                     self.behavior_relation_matrix = matrix_data
-                self.logger.info(f"✅ 加载行为转移矩阵: {matrix_path}")
+                self.logger.info(f"加载行为转移矩阵: {matrix_path}")
         
         # 加载映射关系
         mapping_path = load_dir / file_names["mappings"]
@@ -650,7 +650,7 @@ class RelationGraphBuilder:
             self.idx2item = mappings['idx2item']
             self.original_to_compressed = mappings.get('original_to_compressed', {})
             self.compressed_to_original = mappings.get('compressed_to_original', {})
-            self.logger.info("✅ 加载映射关系")
+            self.logger.info("加载映射关系")
         
-        self.logger.info("✅ 图谱加载完成")
+        self.logger.info("图谱加载完成")
         return True

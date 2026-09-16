@@ -700,7 +700,7 @@ def collate_fn(batch):
 
 # 早停策略类 - 直接在脚本中定义
 class EarlyStopping:
-    """DR4SR原版早停策略"""
+    """早停：监控验证指标，可选保存最佳模型"""
     def __init__(self, model, monitor, dataset_name, cfg, save_dir='saved', 
                  patience=10, delta=0, mode='max', save_model=True):
         self.monitor = monitor
@@ -857,7 +857,7 @@ def main(cfg: DictConfig):
     # 动态添加运行时参数到配置中
     OmegaConf.set_struct(cfg, False)
     cfg.num_items = len(item2idx)
-    # 不要写 cfg.device = device
+    # device 是 torch.device，不能写回 OmegaConf
     OmegaConf.set_struct(cfg, True)
     
     # 动态获取模型类
@@ -901,10 +901,10 @@ def main(cfg: DictConfig):
     logger.info(f"日志文件: {log_filename}")
     logger.info(f"模型保存: {'是' if save_model else '否'}")
 
-    # DR4SR原版早停策略
+    # 早停
     early_stopping = EarlyStopping(
         model=model,
-        monitor='ndcg@20',  # DR4SR原版监控ndcg@20
+        monitor='ndcg@20',
         dataset_name=cfg.data.name,  # 使用配置中的数据集名
         cfg=cfg, # 传入配置
         save_dir=save_dir,
@@ -914,7 +914,7 @@ def main(cfg: DictConfig):
     )
     logger.info(f'早停策略初始化完成，监控指标: ndcg@20, patience: {cfg.training.early_stop_patience}, 保存模型: {save_model}')
 
-    # 训练循环 - DR4SR原版风格
+    # 训练循环
     training_time = 0
     inference_time = 0
     
@@ -931,7 +931,7 @@ def main(cfg: DictConfig):
                 for batch in pbar:
                     batch = {k: v.to(device, non_blocking=pin_memory) for k, v in batch.items()}
 
-                    # DR4SR原版负采样
+                    # 负采样
                     batch['neg_item'] = model._neg_sampling(batch)
                     batch['neg_item'] = batch['neg_item'].to(device)
 
@@ -959,7 +959,7 @@ def main(cfg: DictConfig):
             # 验证阶段
             tik_valid = time.time()
             model.eval()
-            val_metrics = evaluate(model, val_loader, k=20, device=device)  # DR4SR原版用k=20
+            val_metrics = evaluate(model, val_loader, k=20, device=device)  # 主指标 k=20
             tok_valid = time.time()
             inference_time += tok_valid - tik_valid
             
@@ -997,14 +997,14 @@ def main(cfg: DictConfig):
             # 学习率调度：监控 val NDCG@20，停滞则降 lr，防止中后期发散
             scheduler.step(val_ndcg_20)
             
-            # DR4SR原版早停检查
+            # 早停检查
             stop_training = early_stopping(model, epoch, logged_metrics)
             if stop_training:
                 break
                 
             # 定期测试
             if (epoch + 1) % 10 == 0 or epoch == cfg.training.num_epochs - 1:
-                test_metrics = evaluate(model, test_loader, k=20, device=device)  # DR4SR原版用k=20
+                test_metrics = evaluate(model, test_loader, k=20, device=device)  # 主指标 k=20
                 test_metrics_10 = evaluate(model, test_loader, k=10, device=device)
                 logger.info(f"Test: Recall@20: {test_metrics['recall@20']:.4f} | NDCG@20: {test_metrics['ndcg@20']:.4f}")
                 logger.info(f"      Recall@10: {test_metrics_10['recall@10']:.4f} | NDCG@10: {test_metrics_10['ndcg@10']:.4f}")

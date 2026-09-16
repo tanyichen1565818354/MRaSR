@@ -3,7 +3,7 @@ import numpy as np
 from pathlib import Path
 
 def recall_at_k(preds, targets, k=10):
-    """DR4SR风格的召回率计算 - 支持多物品评估"""
+    """Recall@k，支持单目标与多目标"""
     # preds: [batch_size, num_items]
     # targets: 可以是单个目标索引 [batch_size] 或多目标掩码 [batch_size, num_items]
     
@@ -35,7 +35,7 @@ def recall_at_k(preds, targets, k=10):
     return recall.mean()
 
 def ndcg_at_k(preds, targets, k=10):
-    """DR4SR风格的NDCG计算 - 支持多物品评估"""
+    """NDCG@k，支持单目标与多目标"""
     # preds: [batch_size, num_items]
     # targets: 可以是单个目标索引 [batch_size] 或多目标掩码 [batch_size, num_items]
     
@@ -302,7 +302,7 @@ def mrr_at_k(preds, targets, k=10):
     return mrr.mean()
 
 def dr4sr_evaluate(model, eval_loader, top_k=10, device=None, item_embeddings=None):
-    """DR4SR风格的评估函数"""
+    """在验证/测试集上计算 Recall@k 与 NDCG@k"""
     model.eval()
     
     cum_recall = 0.0

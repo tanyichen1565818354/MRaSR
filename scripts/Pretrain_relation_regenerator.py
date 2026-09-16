@@ -281,11 +281,11 @@ class AugmentedDataset(Dataset):
         )
 
 def check_numerical_stability(tensor, name, batch_idx=None):
-    """数值稳定性检查函数 - 修复版"""
+    """检查 tensor 是否含 NaN/Inf"""
     if tensor is None:
         return True, f"{name}: None"
     
-    # 🔧 修复：对于整数类型tensor，转换为float进行检查
+    # 整数 tensor 先转 float 再检查 NaN/Inf
     if tensor.dtype in [torch.long, torch.int, torch.int32, torch.int64]:
         check_tensor = tensor.float()
     else:
@@ -301,7 +301,7 @@ def check_numerical_stability(tensor, name, batch_idx=None):
     status = f"{prefix}{name}: NaN={has_nan}, Inf={has_inf}, Range=[{min_val:.4f}, {max_val:.4f}], Mean={mean_val:.4f}"
     
     if has_nan or has_inf:
-        logger.error(f"❌ 数值异常: {status}")
+        logger.error(f"数值异常: {status}")
         return False, status
     else:
         return True, status
@@ -420,13 +420,13 @@ def train_epoch(model, dataloader, optimizer, scaler, device, config):
     if num_batches > 0:
         return total_loss / num_batches
     else:
-        logger.error("❌ 没有成功的训练批次！")
+        logger.error("没有成功的训练批次！")
         return float('inf')
 
 @hydra.main(version_base=None, config_path="../configs", config_name="regeneration")
 def main(cfg: DictConfig):
     """主训练函数"""
-    # 设置随机种子 - DR4SR原版
+    # 设置随机种子
     seed = cfg.get('seed', 2023)
     random.seed(seed)
     np.random.seed(seed)
@@ -446,7 +446,7 @@ def main(cfg: DictConfig):
     device = torch.device(cfg.resources.device)
     logger.info(f"使用设备: {device}")
     
-    # 🔧 详细的数据加载过程
+    # 详细的数据加载过程
     logger.info("="*50)
     logger.info("开始加载数据...")
     
@@ -459,9 +459,9 @@ def main(cfg: DictConfig):
     
     item2idx = torch.load(item2idx_path, weights_only=False)
     
-    # 🔧 修复：计算实际物品数量
+    # 物品数不含 PAD
     actual_items = [asin for asin, idx in item2idx.items() if asin != '<PAD>']
-    num_items = len(actual_items)  # 这是12101
+    num_items = len(actual_items)
     
     logger.info(f"物品统计: 总计{len(item2idx)}个token, 实际物品{num_items}个")
     
@@ -470,14 +470,14 @@ def main(cfg: DictConfig):
     
     logger.info(f"物品数量: {num_items}, 词汇表大小: {cfg.model.vocab_size}")
     
-    # 2. 🔧 关键修复：正确加载增强数据
+    # 2. 加载增强数据
     augmented_path = Path(cfg.data.augmented_path)
     logger.info(f"加载增强数据: {augmented_path}")
     
     if not augmented_path.exists():
         raise FileNotFoundError(f"增强数据文件不存在: {augmented_path}")
     
-    # 🔧 验证文件大小
+    # 验证文件大小
     file_size = augmented_path.stat().st_size / (1024 * 1024)  # MB
     logger.info(f"增强数据文件大小: {file_size:.2f} MB")
     
@@ -499,7 +499,7 @@ def main(cfg: DictConfig):
     if filt_stats:
         logger.info(f"增强质量过滤: {filt_stats['n_input']} -> {filt_stats['n_kept']}")
     
-    # 🔧 详细分析数据结构
+    # 详细分析数据结构
     if isinstance(augmented_data, dict):
         logger.info(f"增强数据字典键: {list(augmented_data.keys())}")
         if 'pairs' in augmented_data:
@@ -540,34 +540,34 @@ def main(cfg: DictConfig):
     # 4. 创建模型
     logger.info("创建关系增强生成器...")
     
-    # 🆕 在创建模型前记录关系图谱配置
-    logger.info("🔗 关系图谱配置:")
+    # 在创建模型前记录关系图谱配置
+    logger.info("关系图谱配置:")
     logger.info(f"  - 关系维度: {cfg.model.get('relation_dim', 0)}")
     logger.info(f"  - 关系模式: {cfg.model.get('relation_mode', 'disabled')}")
     logger.info(f"  - 融合策略: {cfg.model.get('fusion_strategy', 'none')}")
     
     model = RelationGenerator(
         config=cfg,
-        num_items=num_items,  # 传入12101
+        num_items=num_items,
         sasrec_emb_path=cfg.paths.get('sasrec_emb_path')
     ).to(device)
     
-    # 🆕 模型关系组件信息
+    # 模型关系组件信息
     if hasattr(model, 'condition_encoder') and hasattr(model.condition_encoder, 'relation_dim'):
-        logger.info(f"🔗 模型关系组件:")
+        logger.info(f"模型关系组件:")
         logger.info(f"  - 条件编码器关系维度: {model.condition_encoder.relation_dim}")
         logger.info(f"  - 多样性因子K: {model.K}")
         if hasattr(model.condition_encoder, 'relation_proj'):
             logger.info(f"  - 关系投影层: {model.condition_encoder.relation_proj}")
     
-    # 🆕 通过配置文件参数，灵活控制再生器训练时的关系特征融合方式（“三者融合”或“仅PLM”），并在训练日志中明确记录当前采用的模式。
+    # 通过配置文件参数，灵活控制再生器训练时的关系特征融合方式（“三者融合”或“仅PLM”），并在训练日志中明确记录当前采用的模式。
     feature_mode = getattr(cfg.model, "relation_feature_mode", "fused")
     if feature_mode == "plm_only":
         logger.info("【关系特征模式】仅使用PLM嵌入 (768->64维投影)")
     else:
         logger.info("【关系特征模式】使用PLM+共现+时序三者融合 (加权平均)")
     
-    # 5. 创建优化器 - DR4SR原版设置
+    # 5. 创建优化器
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=cfg.optimizer.lr,
@@ -588,7 +588,7 @@ def main(cfg: DictConfig):
         f"AMP={use_amp}"
     )
 
-    # 6. 训练循环 - DR4SR原版
+    # 6. 训练循环
     logger.info("开始训练...")
     logger.info("="*50)
     
@@ -604,7 +604,7 @@ def main(cfg: DictConfig):
         
         logger.info(f"Epoch {epoch+1} - 平均损失: {avg_loss:.4f}")
         
-        # 🆕 如果损失异常，提前停止
+        # 如果损失异常，提前停止
         if math.isinf(avg_loss) or math.isnan(avg_loss):
             logger.error(f"训练损失异常，停止训练: {avg_loss}")
             break
@@ -634,7 +634,7 @@ def main(cfg: DictConfig):
             }, best_model_path)
             logger.info(f"保存最佳模型: {best_model_path} (loss: {avg_loss:.4f})")
     
-    # 保存最终模型 - DR4SR原版名称
+    # 保存最终模型
     final_model_path = save_dir / "regenerator.pth"
     torch.save(model.state_dict(), final_model_path)
     logger.info(f"训练完成，最终模型保存至: {final_model_path}")

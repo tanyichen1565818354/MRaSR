@@ -12,7 +12,7 @@ from tqdm.auto import tqdm
 logger = logging.getLogger(__name__)
 
 def normal_initialization(module, initial_range=0.02):
-    """DR4SR原版初始化函数"""
+    """N(0, initial_range) 权重初始化"""
     if isinstance(module, nn.Embedding):
         module.weight.data.normal_(mean=0.0, std=initial_range)
         if module.padding_idx is not None:
@@ -26,7 +26,7 @@ def normal_initialization(module, initial_range=0.02):
         module.weight.data.fill_(1.0)
 
 class SeqPoolingLayer(nn.Module):
-    """DR4SR原版序列池化层"""
+    """序列池化层"""
     def __init__(self, pooling_type='mean'):
         super().__init__()
         self.pooling_type = pooling_type
@@ -136,13 +136,13 @@ class RelationConditionEncoder(nn.Module):
             plm_emb_path = graph_dir / self._graph_filename(graph_dir, "plm_embeddings_768dim.pth")
             if plm_emb_path.exists():
                 self.plm_emb = torch.load(plm_emb_path, map_location='cpu', weights_only=False)
-                logger.info(f"✅ 加载PLM嵌入: {self.plm_emb.shape} (from {plm_emb_path.name})")
+                logger.info(f"加载PLM嵌入: {self.plm_emb.shape} (from {plm_emb_path.name})")
 
             # 2. 加载显式关系矩阵
             explicit_relations_path = graph_dir / self._graph_filename(graph_dir, "explicit_relations.pth")
             if explicit_relations_path.exists():
                 self.explicit_relation_dict = torch.load(explicit_relations_path, map_location='cpu', weights_only=False)
-                logger.info(f"✅ 加载显式关系矩阵: {list(self.explicit_relation_dict.keys())} (from {explicit_relations_path.name})")
+                logger.info(f"加载显式关系矩阵: {list(self.explicit_relation_dict.keys())} (from {explicit_relations_path.name})")
 
             # 3. 加载映射关系
             mappings_path = graph_dir / self._graph_filename(graph_dir, "mappings.pth")
@@ -153,7 +153,7 @@ class RelationConditionEncoder(nn.Module):
                     'original_to_compressed': mappings.get('original_to_compressed', {}),
                     'compressed_to_original': mappings.get('compressed_to_original', {})
                 }
-                logger.info(f"✅ 加载映射关系: {len(self.item_mapping['item2idx'])}个物品 (from {mappings_path.name})")
+                logger.info(f"加载映射关系: {len(self.item_mapping['item2idx'])}个物品 (from {mappings_path.name})")
 
             # 4. 预计算/加载 topK 特征查找表（关键加速步骤）
             # 缓存文件也带 _learned 后缀，避免与手调版 graph 的缓存冲突
@@ -225,7 +225,7 @@ class RelationConditionEncoder(nn.Module):
             self._seq_topk_table = cache['seq_topk_table']
             self._plm_table      = cache.get('plm_table')
             logger.info(
-                f"✅ 缓存加载完成: co={self._co_topk_table.shape}, "
+                f"缓存加载完成: co={self._co_topk_table.shape}, "
                 f"seq={self._seq_topk_table.shape}"
             )
             return
@@ -257,7 +257,7 @@ class RelationConditionEncoder(nn.Module):
             'plm_table':      self._plm_table,
         }, cache_path)
         logger.info(
-            f"✅ 预计算完成并缓存: {cache_path}\n"
+            f"预计算完成并缓存: {cache_path}\n"
             f"   co_topk={self._co_topk_table.shape}, seq_topk={self._seq_topk_table.shape}"
         )
         # 释放已不再需要的原始稀疏矩阵
@@ -363,7 +363,7 @@ class RelationConditionEncoder(nn.Module):
         # 池化
         pooled_out = self.pooling_layer(trm_out, src_seqlen)  # [B, 64]
         
-        # 🔧 新架构：动态计算关系特征
+        # 新架构：动态计算关系特征
         if sequence_indices is not None:
             relation_features = self._compute_sequence_relation_features(sequence_indices)  # [B, 64]
             relation_emb = relation_features  # 直接使用64维特征，无需额外投影
@@ -379,14 +379,14 @@ class RelationConditionEncoder(nn.Module):
         return condition
 
 class RelationGenerator(nn.Module):
-    """关系增强生成器 - 基于DR4SR原版架构，支持多行为嵌入"""
+    """关系条件序列生成器，支持多行为嵌入"""
     def __init__(self, config, num_items, sasrec_emb_path=None):
         super().__init__()
         self.config = config
         self.num_items = num_items
         self.device = config.resources.device
 
-        # DR4SR原版参数
+        # 模型超参
         self.K = config.model.K
         self.d_model = config.model.d_model
         self.max_seq_len = config.training.max_seq_len
@@ -406,7 +406,7 @@ class RelationGenerator(nn.Module):
             # Tenrec behavior ids occupy 0..num_behaviors-1 (click/like/comment/follow/share/favorite/read).
             self.behavior_embedding = nn.Embedding(num_behaviors, self.d_model)
             nn.init.normal_(self.behavior_embedding.weight, std=0.02)
-            logger.info(f"✅ 已启用多行为嵌入: {num_behaviors} 种行为类型, d_model={self.d_model}")
+            logger.info(f"已启用多行为嵌入: {num_behaviors} 种行为类型, d_model={self.d_model}")
 
             self.num_behaviors = num_behaviors
             # 双头 decoder 开关：默认启用；消融时在 config 设 use_behavior_head: false
@@ -426,11 +426,11 @@ class RelationGenerator(nn.Module):
                 )
                 nn.init.normal_(self.behavior_head.weight, std=0.02)
                 nn.init.zeros_(self.behavior_head.bias)
-                logger.info("✅ 已启用行为条件化双头 decoder (behavior_head + behavior_condition_proj)")
+                logger.info("已启用行为条件化双头 decoder (behavior_head + behavior_condition_proj)")
             else:
                 self.behavior_head = None
                 self.behavior_condition_proj = None
-                logger.info("⚠️ 双头 decoder 已关闭（消融模式）：仅保留输入侧行为嵌入，item 生成走单头路径")
+                logger.info("双头 decoder 已关闭（消融模式）：仅保留输入侧行为嵌入，item 生成走单头路径")
         else:
             self.behavior_embedding = None
             self.behavior_head = None
@@ -438,7 +438,7 @@ class RelationGenerator(nn.Module):
             self.use_behavior_head = False
             logger.info("多行为嵌入未启用（单行为模式）")
 
-        # DR4SR原版Transformer
+        # Transformer encoder-decoder
         self.transformer = nn.Transformer(
             d_model=self.d_model,
             nhead=config.model.nhead,
@@ -451,7 +451,7 @@ class RelationGenerator(nn.Module):
             batch_first=True,
         )
 
-        # DR4SR原版条件处理
+        # 条件投影与编码器
         self.condition_linear = nn.Sequential(
             nn.Linear(self.d_model, self.d_model * self.K),
             nn.ReLU(),
@@ -460,7 +460,7 @@ class RelationGenerator(nn.Module):
 
         self.condition_encoder = RelationConditionEncoder(self.K, config)
 
-        # DR4SR原版其他组件
+        # dropout 与位置编码
         self.dropout = nn.Dropout(config.model.dropout)
         # +2 是为 SOS/EOS 特殊token预留位置（序列张量 = [SOS] + items + [EOS]）
         self.position_embedding = nn.Embedding(config.training.max_seq_len + 2, self.d_model)
@@ -470,7 +470,7 @@ class RelationGenerator(nn.Module):
         self.load_pretrained_embeddings(sasrec_emb_path)
 
     def load_pretrained_embeddings(self, sasrec_emb_path):
-        """🔧 修复：完全按照DR4SR原版方式加载嵌入"""
+        """加载 SASRec 预训练物品嵌入，并为 SOS/EOS 补随机向量"""
         if sasrec_emb_path and torch.cuda.is_available():
             try:
                 logger.info(f"加载SASRec预训练嵌入: {sasrec_emb_path}")
@@ -496,19 +496,16 @@ class RelationGenerator(nn.Module):
                 if pretrained.size(1) != self.d_model:
                     raise ValueError(f"嵌入维度不匹配: 预训练={pretrained.size(1)}, 模型={self.d_model}")
                 
-                # 🔧 关键修复：按DR4SR原版方式处理嵌入
-                # 预训练嵌入应该包含 PAD + 实际物品，总共 num_items + 1 个
-                expected_pretrained_size = self.num_items + 1  # PAD + 12101个实际物品 = 12102
+                # 预训练嵌入布局：PAD + 物品，再拼接 SOS/EOS
+                expected_pretrained_size = self.num_items + 1  # PAD + 实际物品
                 
                 if pretrained.size(0) == expected_pretrained_size:
-                    # 预训练嵌入包含PAD+物品，按DR4SR原版方式添加SOS和EOS
                     logger.info(f"预训练嵌入包含PAD+物品({expected_pretrained_size}个)，添加SOS和EOS")
                     
-                    # 🔧 DR4SR原版方式：为SOS和EOS添加随机初始化嵌入
                     sos_eos_emb = torch.zeros(2, self.d_model)
-                    nn.init.normal_(sos_eos_emb, std=0.02)  # 与DR4SR原版完全一致
+                    nn.init.normal_(sos_eos_emb, std=0.02)
                     
-                    # 最终嵌入：[PAD(0) + Items(1-12101)] + [SOS(12102), EOS(12103)]
+                    # 最终布局：[PAD, items..., SOS, EOS]
                     final_embeddings = torch.cat([pretrained, sos_eos_emb])
                     
                 elif pretrained.size(0) == self.num_items:
@@ -520,7 +517,7 @@ class RelationGenerator(nn.Module):
                     sos_eos_emb = torch.zeros(2, self.d_model)
                     nn.init.normal_(sos_eos_emb, std=0.02)  # SOS和EOS随机初始化
                     
-                    # 按照索引顺序拼接：[PAD(0), items(1-12101), SOS(12102), EOS(12103)]
+                    # 按索引拼接：[PAD, items..., SOS, EOS]
                     final_embeddings = torch.cat([pad_emb, pretrained, sos_eos_emb])
                     
                 else:
@@ -534,7 +531,7 @@ class RelationGenerator(nn.Module):
                 )
                 self.item_embedding_decoder = self.item_embedding
                 
-                logger.info(f"✅ 成功加载DR4SR原版格式嵌入:")
+                logger.info("成功加载预训练嵌入:")
                 logger.info(f"  - 最终嵌入形状: {final_embeddings.shape}")
                 logger.info(f"  - PAD: {self.PAD}")
                 logger.info(f"  - 实际物品: 1-{self.num_items}")
@@ -555,7 +552,7 @@ class RelationGenerator(nn.Module):
         self.item_embedding = nn.Embedding(total_vocab, self.d_model, padding_idx=self.PAD)
         self.item_embedding_decoder = self.item_embedding
         
-        # 🔧 确保SOS和EOS有正确的随机初始化
+        # 确保SOS和EOS有正确的随机初始化
         with torch.no_grad():
             nn.init.normal_(self.item_embedding.weight[self.SOS], std=0.02)
             nn.init.normal_(self.item_embedding.weight[self.EOS], std=0.02)
@@ -723,7 +720,7 @@ class RelationGenerator(nn.Module):
         return self.transformer.encoder(src_emb, src_mask)
 
     def set_condition(self, condition):
-        """设置条件 - DR4SR原版"""
+        """设置当前生成条件索引"""
         self.condition = condition
 
     def decode(self, tgt, memory, tgt_mask):
@@ -759,13 +756,13 @@ class RelationGenerator(nn.Module):
         return decoder_out @ self.item_embedding_decoder.weight.T
 
 def generate_square_subsequent_mask(sz, device='cuda'):
-    """DR4SR原版掩码生成"""
+    """生成下三角因果掩码"""
     mask = (torch.triu(torch.ones((sz, sz), device=device)) == 1).transpose(0, 1)
     mask = mask.float().masked_fill(mask == 0, -100000).masked_fill(mask == 1, float(0.0))
     return mask
 
 def create_mask(src, tgt):
-    """DR4SR原版掩码创建"""
+    """构造 encoder/decoder 的因果掩码与 padding 掩码"""
     src_seq_len = src.shape[1]
     tgt_seq_len = tgt.shape[1]
     
@@ -779,13 +776,13 @@ def create_mask(src, tgt):
     return src_mask, tgt_mask, src_padding_mask, tgt_padding_mask
 
 def dr4sr_cross_entropy_loss(logits, targets, ignore_index=0, chunk_rows=0):
-    """DR4SR交叉熵损失函数。
+    """交叉熵损失。
 
     chunk_rows > 0 时按行分块计算：每块单独 upcast 到 fp32 做 CE（reduction='sum'），
     最后除以有效 token 数得到与全局 mean 等价的结果。
     这样避免一次性把 [N, V] 的 fp32 logits 物化出来——大词表（V≈36万）时
     全量 .float() 单张就 4GB+，是 OOM 的主因。分块后峰值降到 [chunk_rows, V]。
-    chunk_rows <= 0 时走原版逻辑（小词表或兼容老调用方）。
+    chunk_rows <= 0 时走一次性 CE（小词表或兼容旧调用）。
     """
     logits_flat = logits.reshape(-1, logits.shape[-1])
     targets_flat = targets.reshape(-1)
@@ -810,7 +807,7 @@ def dr4sr_cross_entropy_loss(logits, targets, ignore_index=0, chunk_rows=0):
     return total_loss / total_valid.clamp(min=1).float()
 
 def compute_dr4sr_regularization_loss(condition_prob):
-    """DR4SR原版正则化损失 - 条件多样性损失"""
+    """条件分布熵正则，鼓励条件多样性"""
     # 计算条件分布的熵损失，鼓励多样性
     reg_loss = -(condition_prob * torch.log(condition_prob + 1e-12)).sum(-1).mean()
     return reg_loss

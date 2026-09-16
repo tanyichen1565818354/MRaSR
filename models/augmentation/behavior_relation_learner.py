@@ -96,7 +96,7 @@ class BehaviorRelationLearner:
             from pathlib import Path
             out = Path(save_path)
             if not out.is_absolute():
-                # Prefer workspace root (parent of RDR4SR) so paper/scripts/... works under Hydra.
+                # Relative save_path: resolve under repo root; paths starting with paper/ try the parent workspace.
                 repo_root = Path(__file__).resolve().parents[2]  # RDR4SR/
                 workspace = repo_root.parent
                 cand = workspace / out
@@ -167,7 +167,7 @@ class BehaviorRelationLearner:
 
     def _log_matrix_summary(self, relation_logits: torch.Tensor) -> None:
         relation_probs = torch.sigmoid(relation_logits)
-        logger.info("✅ 行为转移矩阵学习完成（σ(R) 摘要）")
+        logger.info("行为转移矩阵学习完成（σ(R) 摘要）")
         header = "src\\dst " + " ".join(f"{b:>8}" for b in range(self.num_behaviors))
         logger.info(header)
         for i in range(self.num_behaviors):

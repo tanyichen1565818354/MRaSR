@@ -16,7 +16,7 @@ Tenrec 多行为数据集预处理器。
 评估目标行为统一为 like (id=1)。留一法切分时按 like 位置切分，
 测试期/验证期没有 like 目标的用户从对应 split 剔除。
 
-输出与现有 MultiBehaviorPreprocessor 一致的 .pth 体系：
+输出 .pth 文件：
     sequences.pth / products.pth / item2idx.pth / user_ids.pth
 每个用户序列的 dict 含：
     sequence        : List[str]   item_id 列表（按 CSV 行序）

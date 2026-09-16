@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 def normal_initialization(module, initial_range=0.02):
-    """DR4SR原版初始化函数"""
+    """N(0, initial_range) 权重初始化"""
     if isinstance(module, nn.Embedding):
         module.weight.data.normal_(mean=0.0, std=initial_range)
         if module.padding_idx is not None:
@@ -17,7 +17,7 @@ def normal_initialization(module, initial_range=0.02):
         module.weight.data.fill_(1.0)
 
 class BinaryCrossEntropyLoss(nn.Module):
-    """DR4SR原版BCE损失函数"""
+    """加权二元交叉熵（正样本 + 负样本）"""
     def __init__(self):
         super().__init__()
 
@@ -52,11 +52,11 @@ class BinaryCrossEntropyLoss(nn.Module):
         return torch.ones_like(neg_score) / neg_score.size(-1)
 
 class BaseModel(nn.Module):
-    """DR4SR原版风格的BaseModel"""
+    """序列推荐基类"""
     
     def __init__(self, config, dataset_list=None):
         super().__init__()
-        # DR4SR原版配置系统
+        # 配置
         self.config = config
         self.dataset_list = dataset_list or []
         
@@ -77,7 +77,7 @@ class BaseModel(nn.Module):
         # 设备配置
         self.device = config.get('device', 'cuda' if torch.cuda.is_available() else 'cpu')
         
-        # 物品嵌入 - DR4SR原版方式
+        # 物品嵌入
         self.item_embedding = nn.Embedding(self.num_items, self.embed_dim, padding_idx=0)
         
         # 损失函数
@@ -110,7 +110,7 @@ class BaseModel(nn.Module):
         raise NotImplementedError
 
     def training_step(self, batch, reduce=True, return_query=False):
-        """DR4SR原版训练步骤 - 完全匹配原版实现"""
+        """训练一步：正负样本打分并计算 BCE"""
         query = self.forward(batch)
         
         # 处理不同维度的query（SASRec训练时使用origin池化返回3D）
@@ -120,7 +120,7 @@ class BaseModel(nn.Module):
             gather_index = (seq_len - 1).view(-1, 1, 1).expand(-1, -1, query.size(-1))
             query = query.gather(dim=1, index=gather_index).squeeze(1)  # [batch_size, embed_dim]
         
-        # DR4SR原版计算方式
+        # 正负样本内积打分
         pos_score = (query * self.item_embedding.weight[batch[self.fiid]]).sum(-1)
         neg_score = (query.unsqueeze(-2) * self.item_embedding.weight[batch['neg_item']]).sum(-1)
         pos_score[batch[self.fiid] == 0] = -torch.inf  # padding

@@ -1,4 +1,4 @@
-# File: scripts/generate_regenerated_data_optimized.py
+# scripts/generate_regenerated_data.py
 import os
 import random
 import torch
@@ -233,7 +233,7 @@ def batch_greedy_decode(model, memory, src_batch, max_len, SOS, EOS, PAD=0):
 
     return ys, behaviors_tensor
 
-class OptimizedDR4SRRegenerator:
+class SequenceRegenerator:
     def __init__(self, config, device, checkpoint_path=None):
         self.config = config
         self.device = device
@@ -247,7 +247,7 @@ class OptimizedDR4SRRegenerator:
         # 预计算常用tensor
         self._prepare_common_tensors()
         
-        logger.info(f"优化再生器初始化完成：SOS={self.SOS}, EOS={self.EOS}, PAD={self.PAD}")
+        logger.info(f"再生器初始化完成：SOS={self.SOS}, EOS={self.EOS}, PAD={self.PAD}")
 
     def _prepare_common_tensors(self):
         """预计算常用tensor以减少重复创建"""
@@ -256,7 +256,7 @@ class OptimizedDR4SRRegenerator:
 
     def _load_trained_model(self, checkpoint_path):
         """加载训练好的模型"""
-        logger.info("🔄 加载预训练再生器...")
+        logger.info("加载预训练再生器...")
         
         if checkpoint_path:
             model_path = Path(checkpoint_path)
@@ -266,7 +266,7 @@ class OptimizedDR4SRRegenerator:
         if not model_path.exists():
             raise FileNotFoundError(f"模型文件不存在: {model_path}")
         
-        print(f"🔄 加载模型权重: {model_path}")
+        print(f"加载模型权重: {model_path}")
         
         # 加载item2idx
         item2idx_path = Path(self.config.paths.original_sequences).parent / "item2idx.pth"
@@ -294,11 +294,11 @@ class OptimizedDR4SRRegenerator:
         model.load_state_dict(state_dict, strict=False)
         model.eval()
         
-        logger.info("✅ 再生器加载完成")
+        logger.info("再生器加载完成")
         return model
 
     def generate_single_fast(self, src_seq, condition_idx=0):
-        """🚀 快速单序列生成"""
+        """快速单序列生成"""
         # 快速预处理
         if len(src_seq) > self.max_seq_len:
             src_seq = src_seq[-self.max_seq_len:] 
@@ -344,8 +344,8 @@ class OptimizedDR4SRRegenerator:
 
     def generate_all_optimized(self, sequences, K=None, chunk_size=1000, batch_size=64, source_behaviors=None):
         """
-        🚀 批量并行生成。
-        核心优化：
+        批量并行生成。
+        实现要点：
           1. 每个 batch 只编码一次（encode），K 个条件共用 memory，节省 K-1 次 encode。
           2. 同一 batch 内所有序列同步自回归解码（GPU 完全并行）。
           3. 所有 mask 操作向量化，无 Python 逐样本循环。
@@ -538,8 +538,7 @@ def main(cfg: DictConfig):
     
     checkpoint_path = Path(cfg.paths.save_dir) / "regenerator_best.pth"
     
-    # 初始化优化再生器
-    regenerator = OptimizedDR4SRRegenerator(
+    regenerator = SequenceRegenerator(
         config=cfg,
         device=device,
         checkpoint_path=str(checkpoint_path)
@@ -593,14 +592,14 @@ def main(cfg: DictConfig):
         test_result = regenerator.generate_single_fast(first_seq, 0)
         if test_result and test_result.get('generated'):
             gen_len = len(test_result['generated'])
-            logger.info(f"✅ 单序列生成测试成功，生成{gen_len}个token")
+            logger.info(f"单序列生成测试成功，生成{gen_len}个token")
             if 'generated_behaviors' in test_result:
                 logger.info(f"   行为预测: {test_result['generated_behaviors'][:10]}")
         else:
-            logger.error("❌ 单序列生成测试失败")
+            logger.error("单序列生成测试失败")
             return
     
-    # 🚀 批量并行生成
+    # 批量并行生成
     start_time = time.time()
     regenerated_data = regenerator.generate_all_optimized(
         sequences,

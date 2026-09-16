@@ -13,7 +13,7 @@ class BaseRelationBuilder(ABC):
         self.idx2item = {v: k for k, v in item2idx.items()}
         self.logger = logging.getLogger(__name__)
         
-        # 🔧 修正：获取特殊token索引
+        # 修正：获取特殊token索引
         self.special_token_indices = self._get_special_token_indices()
         self.logger.info(f"特殊token索引: {self.special_token_indices}")
         
@@ -31,7 +31,7 @@ class BaseRelationBuilder(ABC):
         pass
     
     def add_relation(self, src_asin, dst_asin, rel_type, weight):
-        # 🔧 修正：检查是否为特殊token
+        # 修正：检查是否为特殊token
         if src_asin == '<PAD>' or dst_asin == '<PAD>':
             return  # 跳过特殊token
         

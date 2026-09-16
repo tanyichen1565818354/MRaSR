@@ -267,12 +267,12 @@ class GraphLoader:
         
         # 加载PLM嵌入
         plm_emb = torch.load(self.graph_dir / self.file_names["plm_emb"], weights_only=False).to(self.device)
-        logger.info(f"✅ PLM嵌入: {plm_emb.shape}")
+        logger.info(f"PLM嵌入: {plm_emb.shape}")
         
         plm_id2idx_path = self.plm_emb_dir / "item_id2idx.pth"
         if plm_id2idx_path.exists():
             plm_item_id2idx = torch.load(plm_id2idx_path, weights_only=False)
-            logger.info(f"✅ PLM索引映射: {len(plm_item_id2idx)}个物品")
+            logger.info(f"PLM索引映射: {len(plm_item_id2idx)}个物品")
         else:
             logger.warning(f"PLM索引映射文件不存在: {plm_id2idx_path}")
             plm_item_id2idx = {}
@@ -281,7 +281,7 @@ class GraphLoader:
         explicit_relations = torch.load(self.graph_dir / self.file_names["explicit_relations"], weights_only=False)
         for k, v in explicit_relations.items():
             explicit_relations[k] = v.to(self.device)
-        logger.info(f"✅ 显式关系: {list(explicit_relations.keys())}")
+        logger.info(f"显式关系: {list(explicit_relations.keys())}")
         
         # 加载PLM相似度矩阵
         plm_sim_raw = torch.load(self.graph_dir / self.file_names["plm_similarity"], weights_only=False)
@@ -294,12 +294,12 @@ class GraphLoader:
             value=plm_sim_raw.values(),
             sparse_sizes=plm_sim_raw.size()
         ).to(self.device)
-        logger.info(f"✅ PLM相似度矩阵: {plm_sim_matrix.nnz()}个非零元素")
+        logger.info(f"PLM相似度矩阵: {plm_sim_matrix.nnz()}个非零元素")
         
         # 加载映射关系
         mappings = torch.load(self.graph_dir / self.file_names["mappings"], weights_only=False)
         
-        logger.info(f"✅ 映射关系: {len(mappings['item2idx'])}个物品")
+        logger.info(f"映射关系: {len(mappings['item2idx'])}个物品")
 
         behavior_relation_matrix = None
         matrix_name = self.file_names.get("behavior_matrix")
@@ -311,7 +311,7 @@ class GraphLoader:
                     behavior_relation_matrix = matrix_data.get("relation_logits")
                 else:
                     behavior_relation_matrix = matrix_data
-                logger.info(f"✅ 行为转移矩阵: {matrix_path}")
+                logger.info(f"行为转移矩阵: {matrix_path}")
         
         return {
             'plm_emb': plm_emb,
@@ -750,7 +750,7 @@ class ExplicitRelationStrategy:
         return candidates
 
 class RelationAugmenter:
-    """简洁版关系增强器"""
+    """关系增强器：基于图谱关系生成增强序列"""
     
     def __init__(self, products, sequences, config):
         """初始化增强器"""
@@ -774,7 +774,7 @@ class RelationAugmenter:
         self.item2idx = self.graph_data['mappings']['item2idx']
         self.idx2item = self.graph_data['mappings']['idx2item']
         
-        # 🔧 获取PLM索引映射
+        # 获取PLM索引映射
         plm_item_id2idx = self.graph_data.get('plm_item_id2idx', {})
         
         # 初始化增强策略
@@ -796,7 +796,7 @@ class RelationAugmenter:
             config
         )
         
-        logger.info("✅ 简洁版关系增强器初始化完成")
+        logger.info("关系增强器初始化完成")
     
     def generate_augmented_sequences(self):
         """生成增强序列 - 完整版本"""
@@ -834,11 +834,11 @@ class RelationAugmenter:
 
         logger.info(f"完整模式：处理 {len(sequences_to_process)} 个序列（目标 {target_count} 对）")
         
-        # 🔧 修复：强制使用串行处理，避免CUDA线程安全问题
+        # 串行处理，避免 CUDA 在多线程下的线程安全问题
         logger.info("使用串行处理以避免CUDA线程安全问题")
         all_pairs = self._sequential_generate(sequences_to_process, enabled_strategies, target_count)
         
-        logger.info(f"✅ 完整生成完成，共生成{len(all_pairs)}对增强序列")
+        logger.info(f"完整生成完成，共生成{len(all_pairs)}对增强序列")
 
         qc = quality_control_from_config(self.config)
         generated_pairs = all_pairs
@@ -883,7 +883,7 @@ class RelationAugmenter:
         all_pairs = []
         processed_count = 0
         
-        # 🔧 优化：更准确的进度预估
+        # 优化：更准确的进度预估
         total_sequences = len(sequences_to_process)
         expected_pairs_per_seq = len(enabled_strategies) * self.config.augmentation.generation.variants_per_strategy
         
@@ -967,7 +967,7 @@ class RelationAugmenter:
                     attempts += 1
 
                     if strategy == 'plm':
-                        # 将行为感知替换概率注入策略（临时覆盖）
+                        # 将行为感知替换概率传入策略
                         augmented = self.plm_strategy.generate(
                             original_seq,
                             behavior_replace_probs=behavior_replace_probs

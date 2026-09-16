@@ -1,4 +1,4 @@
-# utils/generate_plm_emb.py
+# scripts/generate_plm_emb.py
 import os
 import re
 import tempfile
@@ -290,7 +290,7 @@ def generate_plm_embeddings(config, device="cuda:0"):
         for tag, emb_dir in emb_targets:
             _torch_save_atomic(emb_tensor, os.path.join(emb_dir, "item_embeddings.pth"))
             _torch_save_atomic(id2idx, os.path.join(emb_dir, "item_id2idx.pth"))
-            logger.info(f"✅ [{tag}] PLM嵌入已保存至 {emb_dir}")
+            logger.info(f"[{tag}] PLM嵌入已保存至 {emb_dir}")
         
     except Exception as e:
         logger.error(f"生成失败: {str(e)}")

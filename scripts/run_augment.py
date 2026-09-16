@@ -45,7 +45,7 @@ def load_data(config):
         raise FileNotFoundError(f"序列数据不存在: {sequences_path}")
     sequences = torch.load(sequences_path, weights_only=False)
     
-    logger.info(f"✅ 加载完成: {len(products)}个商品, {len(sequences)}个序列")
+    logger.info(f"加载完成: {len(products)}个商品, {len(sequences)}个序列")
     
     # 统计序列长度分布
     length_stats = defaultdict(int)
@@ -93,7 +93,7 @@ def main(cfg: DictConfig) -> None:
     logger.info(f"每种策略变体数: {cfg.augmentation.generation.variants_per_strategy}")
     logger.info(f"质量阈值: {cfg.augmentation.generation.quality_control.quality_threshold}")
     
-    # 🔧 修复：在try块外初始化变量
+    # 在 try 外初始化，保证 except/finally 可访问
     augmenter = None
     augmented_sequences = []
     
@@ -121,7 +121,7 @@ def main(cfg: DictConfig) -> None:
         elapsed = (datetime.now() - start_time).total_seconds()
         logger.info(f"生成完成，耗时: {elapsed:.2f}秒")
         
-        # 🔧 修复：在删除前保存需要的数据
+        # 释放 augmenter 前先取出后续保存所需字段
         item2idx = getattr(augmenter, 'item2idx', {})
         filter_stats = getattr(augmenter, 'last_filter_stats', None)
         
@@ -196,7 +196,7 @@ def main(cfg: DictConfig) -> None:
         
         save_data = {
             'pairs': augmented_sequences,
-            'item2idx': item2idx,  # 🔧 修复：使用保存的item2idx
+            'item2idx': item2idx,
             'metadata': {
                 'total_pairs': len(augmented_sequences),
                 'strategy_counts': strategy_stats,
@@ -220,7 +220,7 @@ def main(cfg: DictConfig) -> None:
         }
         
         torch.save(save_data, output_path)
-        logger.info(f"✅ 结果保存至: {output_path}")
+        logger.info(f"结果保存至: {output_path}")
         
         # 最终统计
         completion_rate = len(augmented_sequences) / cfg.target_count * 100
